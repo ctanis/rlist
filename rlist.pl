@@ -4,6 +4,7 @@
 # craig-tanis@utc.edu
 # http://weblar.org
 #
+# http://github.com/ctanis/rlist
 # Wed Feb  8 09:04:06 2012
 
 use strict;
