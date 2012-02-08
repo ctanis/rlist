@@ -1,23 +1,29 @@
 #! /usr/bin/perl -w
 use strict;
+use Carp;
 use XML::Simple;
+use File::Temp;
+
+# handy for kludging your way through XML!
 #use Data::Dumper;
 
-my $xml_parser = XML::Simple->new();
 
-## dump the bookmarks plist as xml
-my $xml = `/usr/libexec/PlistBuddy ~/Library/Safari/Bookmarks.plist -x -c print`;
+sub get_reading_list() {
+  my $xml_parser = XML::Simple->new();
 
-my $bmarks = $xml_parser->XMLin($xml)
-  or die;
+  ## dump the bookmarks plist as xml
+  my $xml = `/usr/libexec/PlistBuddy ~/Library/Safari/Bookmarks.plist -x -c print`;
 
-## this is obviously a hacky way to get at the desired data (strings
-## and dicts all over the place) but it seems to work
-my @bmark_groups = @{ $bmarks->{'dict'}->{'array'}->{'dict'} };
-my @rlist=();
+  my $bmarks = $xml_parser->XMLin($xml)
+    or carp;
 
-for my $bg (@bmark_groups)
-  {
+
+  ## this is obviously a hacky way to get at the desired data (strings
+  ## and dicts all over the place) but it seems to work
+  my @bmark_groups = @{ $bmarks->{'dict'}->{'array'}->{'dict'} };
+  my @rlist=();
+
+  for my $bg (@bmark_groups) {
     # pick the group with the right label
     next unless grep /com\.apple\.ReadingList/, @{ $bg->{'string'} };
 
@@ -34,16 +40,35 @@ for my $bg (@bmark_groups)
 	}
       }
 
-#      print "**$text** -> \"$url\"\n";
+      #      print "**$text** -> \"$url\"\n";
       push @rlist, {'url' => $url, 'text' => $text};
     }
   }
 
-
+  return @rlist;
+}
+  
   
 #print Dumper(@rlist);
 
-for my $b (@rlist)
-  {
-    print '<a href="', $b->{'url'}, '">', $b->{'text'}, '</a><br>', "\n";
-  }
+## print contents to a temporary html file
+my $fh = File::Temp->new( UNLINK=>0, SUFFIX => '.html' );
+
+# if i wanted to have perl clean up the tmp file for me...
+# my $fh = File::Temp->new( SUFFIX => '.html' );
+
+print $fh '<html><title>Safari Reading List</title><body><ol>';
+for my $b (get_reading_list()) {
+  print $fh '<li><a href="', $b->{'url'}, '">', $b->{'text'}, '</a></li>', "\n";
+}
+print $fh '</ol></body>';
+
+$fh->close();
+
+
+
+# open in system-configured browser
+system("open $fh");
+  
+# # sleep for a little bit, so that tmp file can get deleted
+# sleep 3;
