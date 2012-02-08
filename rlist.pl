@@ -1,4 +1,11 @@
 #! /usr/bin/perl -w
+
+# Craig Tanis
+# craig-tanis@utc.edu
+# http://weblar.org
+#
+# Wed Feb  8 09:04:06 2012
+
 use strict;
 use Carp;
 use XML::Simple;
